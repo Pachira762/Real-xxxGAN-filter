@@ -1,0 +1,4 @@
+LIBRARY Real-xxxGAN-filter.auf
+
+EXPORTS
+	GetFilterTable @1
