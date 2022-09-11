@@ -28,6 +28,19 @@ bool RealXxxGanFilter::Process(Mode mode, int scale, int denoise, bool tta) {
 		return true;
 	}
 
+	if (mode == Mode::RealESRGAN_X4Plus || mode == Mode::RealESRGAN_X4PlusAnime) {
+		scale = 4;
+	}
+
+	if (mode == Mode::RealCUGAN) {
+		if (scale >= 3 && denoise >= 1) {
+			denoise = 3;
+		}
+	}
+	else {
+		denoise = 0;
+	}
+
 	if ((!realcugan_ && !realesrgan_) || mode_ != mode || scale_ != scale || denoise_ != denoise || tta_ != tta) {
 		if (!Configurate(mode, scale, denoise, tta)) {
 			return false;
@@ -49,9 +62,11 @@ bool RealXxxGanFilter::Process(Mode mode, int scale, int denoise, bool tta) {
 }
 
 std::wstring RealXxxGanFilter::GetModelFolder(Mode mode) {
-	switch (mode) {
-	case Mode::RealCUGAN: return L"plugins\\models\\models-se\\";
-	default: return L"plugins\\models\\";
+	if (mode == Mode::RealCUGAN) {
+		return L"plugins\\models\\models-se\\";
+	}
+	else {
+		return L"plugins\\models\\";
 	}
 }
 

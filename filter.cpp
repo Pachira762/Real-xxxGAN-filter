@@ -3,15 +3,11 @@
 
 static RealXxxGanFilter* plugin = nullptr;
 
-static constexpr int NumTrackbarItems = 3;
-static TCHAR* TrackbarNames[NumTrackbarItems] = { "スケール", "デノイズ", "TTA" };
-static int TrackbarDefaults[NumTrackbarItems] = { 2, -1, 0 };
-static int TrackbarMins[NumTrackbarItems] = { 1, -1, 0 };
-static int TrackbarMaxs[NumTrackbarItems] = { 4, 3, 1 };
-
-static constexpr int NumRadioButtonItems = 4;
-static TCHAR* RadioButtonNames[NumRadioButtonItems] = { "Real-CUGAN", "Real-ESRGAN AnimeVideo-v3", "Real-ESRGAN x4plus", "Real-ESRGAN x4plus-anime" };
-static int RadioButtonDefaults[NumRadioButtonItems] = { 1, 0, 0, 0 };
+static constexpr int NumTrackbarItems = 4;
+static TCHAR* TrackbarNames[NumTrackbarItems] = { "モード", "スケール", "デノイズ", "TTA" };
+static int TrackbarDefaults[NumTrackbarItems] = { 0, 2, -1, 0 };
+static int TrackbarMins[NumTrackbarItems] = { 0, 1, -1, 0 };
+static int TrackbarMaxs[NumTrackbarItems] = { 3, 4, 3, 1 };
 
 BOOL InitPlugin(FILTER* fp) {
 	if (plugin) {
@@ -34,40 +30,13 @@ BOOL ExitPlugin(FILTER* fp) {
 
 BOOL ProcPlugin(FILTER* fp, FILTER_PROC_INFO* fpip) {
 	if (!plugin) {
-		MessageBoxW(NULL, L"Plugin not initialized!\n", L"Real-xxxGAN", MB_OK);
 		return FALSE;
 	}
 
-	Mode mode = Mode::RealCUGAN;
-	if (fp->check[0]) {
-		mode = Mode::RealCUGAN;
-	}
-	else if (fp->check[1]) {
-		mode = Mode::RealESRGAN_AnimeVideoV3;
-	}
-	else if (fp->check[2]) {
-		mode = Mode::RealESRGAN_X4Plus;
-	}
-	else if (fp->check[3]) {
-		mode = Mode::RealESRGAN_X4PlusAnime;
-	}
-
-	int scale = fp->track[0];
-	if (mode == Mode::RealESRGAN_X4Plus || mode == Mode::RealESRGAN_X4PlusAnime) {
-		scale = 4;
-	}
-
-	int denoise = fp->track[1];
-	if (mode == Mode::RealCUGAN) {
-		if (scale >= 3 && denoise >= 1) {
-			denoise = 3;
-		}
-	}
-	else {
-		denoise = 0;
-	}
-
-	bool tta = fp->track[2];
+	Mode mode = (Mode)fp->track[0];
+	int scale = fp->track[1];
+	int denoise = fp->track[2];
+	bool tta = fp->track[3];
 
 	int w = fpip->w;
 	int h = fpip->h;
@@ -77,7 +46,7 @@ BOOL ProcPlugin(FILTER* fp, FILTER_PROC_INFO* fpip) {
 	int h_out = std::min(h_max, scale * h);
 
 	if (!plugin->SetSize(w, h, scale)) {
-		MessageBoxW(NULL, L"Failed buffer allocation!\n", L"Real-xxxGAN", MB_OK);
+		MessageBoxW(NULL, L"Failed buffer allocation!\n", L"Real-xxxGAN-filter", MB_OK);
 		return FALSE;
 	}
 
@@ -116,23 +85,20 @@ BOOL ProcPlugin(FILTER* fp, FILTER_PROC_INFO* fpip) {
 	return TRUE;
 }
 
-EXTERN_C __declspec(dllexport) FILTER_DLL* __stdcall GetFilterTable(void)
-{
+EXTERN_C __declspec(dllexport) FILTER_DLL* __stdcall GetFilterTable(void) {
 	static FILTER_DLL dll{};
 
-	dll.flag = FILTER_FLAG_EX_INFORMATION | FILTER_FLAG_RADIO_BUTTON;
+	dll.flag = FILTER_FLAG_EX_INFORMATION;
 	dll.name = "Real-xxxGAN-filter";
 	dll.track_n = NumTrackbarItems;
 	dll.track_name = TrackbarNames;
 	dll.track_default = TrackbarDefaults;
 	dll.track_s = TrackbarMins;
 	dll.track_e = TrackbarMaxs;
-	dll.check_n = NumRadioButtonItems;
-	dll.check_name = RadioButtonNames;
-	dll.check_default = RadioButtonDefaults;
 	dll.func_proc = ProcPlugin;
 	dll.func_init = InitPlugin;
 	dll.func_exit = ExitPlugin;
+	dll.information = "モード 0:Real-CUGAN 1:Real-ESRGAN-AnimeVideo-v3 2:Real-ESRGAN-x4plus 3:Real-ESRGAN-4plus-Anime";
 
 	return &dll;
 }
